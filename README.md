@@ -1,4 +1,4 @@
-# Smart Dan Peti (Smart Donation Box & Trust Management System)
+ # Smart Dan Peti (Smart Donation Box & Trust Management System)
 
 A state-of-the-art, IoT-enabled Smart Donation Box and Financial Governance platform designed for temple trusts, shrines, and charitable organizations. It bridges traditional sanctum offerings with modern digital transparency, optical banknote verification, live telemetry, and automated Section 80G tax receipts.
 
@@ -76,7 +76,20 @@ The MySQL database schema is located at `database/schema.sql` and includes the f
 
 ---
 
-## 🚀 Exact Windows PowerShell Run Commands
+## 🚀 Quick Start (Single Command)
+
+Run both Frontend and Backend concurrently from the root directory:
+
+```powershell
+npm run dev
+```
+
+- **Frontend App**: http://localhost:5174
+- **Backend API**: http://localhost:5000/api
+
+---
+
+## 🛠️ Individual Services Run Commands (Optional)
 
 Open two Windows PowerShell terminals in `E:\Smart-Dan-Peti`:
 

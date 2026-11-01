@@ -21,7 +21,9 @@ async function testConnection() {
     connection.release();
     return true;
   } catch (error) {
-    console.error(`[Database Error] Failed to connect to MySQL:`, error.message);
+    console.log(`\x1b[33m[Database Notice] MySQL is not running on port ${process.env.DB_PORT || '3306'}.\x1b[0m`);
+    console.log(`\x1b[36m[Database Notice] Backend is running in resilient Demo/Simulation mode.\x1b[0m`);
+    console.log(`\x1b[90m[Database Notice] To enable MySQL, start MySQL service in XAMPP (Control Panel).\x1b[0m`);
     return false;
   }
 }

@@ -4,7 +4,6 @@ import {
   Receipt,
   ScanLine,
   BarChart3,
-  Users,
   ShieldCheck,
   Cpu,
   ChevronLeft,
@@ -23,7 +22,6 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     { id: 'donations', label: 'Donation History', icon: Receipt },
     { id: 'detections', label: 'Pending Review', icon: ScanLine, badge: pendingCount },
     { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
-    { id: 'users', label: 'User Management', icon: Users, role: ['ADMIN', 'TRUSTEE'] },
     { id: 'audit', label: 'Audit Logs', icon: ShieldCheck },
     { id: 'devices', label: 'Device & Settings', icon: Cpu }
   ];

@@ -4,6 +4,8 @@ const donationController = require('../controllers/donationController');
 
 router.post('/', donationController.createDonation);
 router.get('/', donationController.getAllDonations);
+router.get('/denominations', donationController.getCashDenominations);
+router.post('/denominations', donationController.updateCashDenominations);
 router.get('/ticker', donationController.getRecentTicker);
 router.get('/receipt/:query', donationController.getReceipt);
 router.get('/generate-qr', donationController.generatePaymentQr);

@@ -3,22 +3,29 @@ import { api, setAuthToken, getAuthToken } from '../api/client';
 
 const AuthContext = createContext();
 
-const DEMO_USERS = {
-  ADMIN: { id: 1, name: 'Srikanth Ramanathan', email: 'admin@smartdanpeti.org', role: 'ADMIN', phone: '+91 98765 43210', pan_number: 'ABCDE1234F' },
-  TRUSTEE: { id: 2, name: 'Mahant Aniruddha Das', email: 'trustee@smartdanpeti.org', role: 'TRUSTEE', phone: '+91 98765 43211', pan_number: 'TRUST9876G' },
-  PRIEST: { id: 3, name: 'Pandit Radheshyam', email: 'priest@smartdanpeti.org', role: 'PRIEST', phone: '+91 98765 43212', pan_number: 'PRIEST123H' },
-  AUDITOR: { id: 4, name: 'Suresh K. Auditor', email: 'auditor@smartdanpeti.org', role: 'AUDITOR', phone: '+91 98765 43213', pan_number: 'AUDIT4567J' },
-  OPERATOR: { id: 5, name: 'Sunil Sharma', email: 'operator@smartdanpeti.org', role: 'OPERATOR', phone: '+91 98765 43214', pan_number: 'OPERA1234K' }
+const DEMO_ADMIN = {
+  id: 1,
+  name: 'Srikanth Ramanathan',
+  email: 'admin@smartdanpeti.org',
+  role: 'ADMIN',
+  phone: '+91 98765 43210',
+  pan_number: 'ABCDE1234F'
 };
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('sdp_user');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return null; }
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.role === 'ADMIN' || parsed.role === 'TRUSTEE')) {
+          return parsed;
+        }
+      } catch (e) {
+        return null;
+      }
     }
-    // Default logged in as ADMIN for immediate out-of-the-box convenience
-    return DEMO_USERS.ADMIN;
+    return DEMO_ADMIN;
   });
 
   const [token, setToken] = useState(() => getAuthToken());
@@ -42,32 +49,63 @@ export function AuthProvider({ children }) {
         setAuthToken(res.token);
         return { success: true };
       }
-      // If backend offline or login fails, check demo accounts
-      const matchedDemo = Object.values(DEMO_USERS).find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (matchedDemo && password === 'admin123') {
-        setUser(matchedDemo);
-        const mockToken = 'mock_jwt_token_' + matchedDemo.role.toLowerCase();
+      // Demo fallback
+      if (email.toLowerCase() === DEMO_ADMIN.email.toLowerCase() && (password === 'admin123' || password === 'admin@123')) {
+        setUser(DEMO_ADMIN);
+        const mockToken = 'mock_jwt_token_admin';
         setToken(mockToken);
         setAuthToken(mockToken);
         return { success: true };
       }
-      return { success: false, message: res.error || 'Invalid email or password' };
+      return { success: false, message: res.error || res.message || 'Invalid administrator email or password.' };
     } catch (err) {
-      const matchedDemo = Object.values(DEMO_USERS).find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (matchedDemo && password === 'admin123') {
-        setUser(matchedDemo);
+      if (email.toLowerCase() === DEMO_ADMIN.email.toLowerCase() && (password === 'admin123' || password === 'admin@123')) {
+        setUser(DEMO_ADMIN);
         return { success: true };
       }
-      return { success: false, message: 'Server error during authentication' };
+      return { success: false, message: 'Server connection error during admin sign in.' };
     } finally {
       setLoading(false);
     }
   };
 
-  const quickDemoLogin = (roleName) => {
-    const demo = DEMO_USERS[roleName] || DEMO_USERS.ADMIN;
-    setUser(demo);
-    const mockToken = 'mock_jwt_token_' + demo.role.toLowerCase();
+  const registerAdmin = async (adminData) => {
+    setLoading(true);
+    try {
+      const res = await api.register({ ...adminData, role: 'ADMIN' });
+      if (res.success && res.user) {
+        setUser(res.user);
+        setToken(res.token);
+        setAuthToken(res.token);
+        return { success: true };
+      }
+      // Offline fallback
+      if (adminData.name && adminData.email) {
+        const fallbackAdmin = {
+          id: Date.now(),
+          name: adminData.name,
+          email: adminData.email,
+          role: 'ADMIN',
+          phone: adminData.phone || '+91 98765 00000',
+          pan_number: adminData.pan_number || 'TRADM9999Z'
+        };
+        setUser(fallbackAdmin);
+        const mockToken = 'mock_jwt_token_admin_new';
+        setToken(mockToken);
+        setAuthToken(mockToken);
+        return { success: true };
+      }
+      return { success: false, message: res.error || res.message || 'Failed to create admin account.' };
+    } catch (err) {
+      return { success: false, message: err.message || 'Error creating administrator account.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickDemoLogin = () => {
+    setUser(DEMO_ADMIN);
+    const mockToken = 'mock_jwt_token_admin';
     setToken(mockToken);
     setAuthToken(mockToken);
   };
@@ -79,13 +117,19 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('sdp_user');
   };
 
-  const hasRole = (...roles) => {
-    if (!user) return false;
-    return roles.includes(user.role);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, quickDemoLogin, logout, hasRole, demoUsers: DEMO_USERS }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        registerAdmin,
+        quickDemoLogin,
+        logout,
+        demoAdmin: DEMO_ADMIN
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

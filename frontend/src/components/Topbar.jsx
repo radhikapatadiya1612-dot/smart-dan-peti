@@ -2,12 +2,8 @@ import React from 'react';
 import {
   Menu,
   Bell,
-  ScanLine,
-  CheckCircle2,
-  AlertTriangle,
   RefreshCw,
-  PlusCircle,
-  Database
+  PlusCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,8 +11,6 @@ export default function Topbar({
   activeTab,
   collapsed,
   setCollapsed,
-  isOnline,
-  onOpenDemoDetection,
   onOpenNewDonation,
   onRefresh,
   refreshing,
@@ -29,7 +23,6 @@ export default function Topbar({
     donations: 'Donation History & Ledger',
     detections: 'Pending Detection Review',
     analytics: 'Financial Analytics & Reports',
-    users: 'User & Role Management',
     audit: 'Security & Compliance Audit Logs',
     devices: 'Smart Dan Peti Fleet & Settings'
   };
@@ -80,59 +73,8 @@ export default function Topbar({
         </div>
       </div>
 
-      {/* Right: Actions, Connection Status & Quick Buttons */}
+      {/* Right: Actions & Quick Buttons */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Backend / MySQL status pill */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            borderRadius: '999px',
-            fontSize: '0.76rem',
-            fontWeight: 600,
-            background: isOnline ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-            border: `1px solid ${isOnline ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-            color: isOnline ? '#10b981' : '#f59e0b'
-          }}
-          title={isOnline ? 'Connected to Node.js backend & MySQL database' : 'Using Demo Simulation data'}
-        >
-          {isOnline ? (
-            <>
-              <Database size={13} />
-              <span>MySQL Live</span>
-            </>
-          ) : (
-            <>
-              <AlertTriangle size={13} />
-              <span>Demo Mode</span>
-            </>
-          )}
-        </div>
-
-        {/* Demo Detection Mode Button */}
-        <button
-          onClick={onOpenDemoDetection}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '7px',
-            padding: '8px 14px',
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%)',
-            border: '1px solid rgba(245, 158, 11, 0.4)',
-            color: '#f59e0b',
-            borderRadius: '8px',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-          title="Simulate a banknote insertion in Demo Detection Mode"
-        >
-          <ScanLine size={16} />
-          <span>Simulate Bill Sensor</span>
-        </button>
-
         {/* Quick Record Donation */}
         <button
           onClick={onOpenNewDonation}

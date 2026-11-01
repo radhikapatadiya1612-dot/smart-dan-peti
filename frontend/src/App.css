@@ -1,11 +1,11 @@
-/* App Layout */
+/* Balanced Adaptive Theme Layout */
 .app-container {
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.04) 0%, transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.03) 0%, transparent 25%);
+  color: var(--text-primary);
+  position: relative;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .main-content {
@@ -14,79 +14,308 @@
   flex-direction: column;
   min-width: 0;
   overflow-y: auto;
-  height: 100vh;
 }
 
 .page-wrapper {
   flex: 1;
-  padding: 24px;
-  max-width: 1440px;
+  padding: 26px 32px;
+  max-width: 1560px;
   width: 100%;
   margin: 0 auto;
 }
 
-/* UI Controls: Custom Input & Select */
+/* Elevated Balanced Cards */
+.designer-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.designer-card:hover {
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
+}
+
+.designer-card-gold {
+  background: var(--gold-card-bg);
+  border: 1.5px solid var(--border-gold);
+  box-shadow: var(--shadow-card);
+}
+
+/* Form Controls */
 .custom-input,
 .custom-select {
   width: 100%;
-  padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.35);
+  padding: 12px 16px;
+  background: var(--bg-subbox);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  color: #fff;
+  border-radius: 12px;
+  color: var(--text-primary);
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
+  font-weight: 500;
   transition: all 0.2s ease;
   outline: none;
+}
+
+.custom-input::placeholder {
+  color: var(--text-muted);
 }
 
 .custom-input:focus,
 .custom-select:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
 }
 
 .custom-select {
   cursor: pointer;
 }
 .custom-select option {
-  background-color: #0f172a;
-  color: #fff;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
 }
 
-/* Buttons */
-.btn-primary {
-  padding: 10px 18px;
-  border-radius: 10px;
-  border: none;
-  background: var(--primary);
-  color: #111827;
+/* Buttons with Dynamic Effects & Shimmer */
+.btn-gold {
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, var(--gold-primary) 0%, #d97706 45%, var(--gold-hover) 100%);
+  color: var(--gold-btn-text);
+  font-weight: 800;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(194, 112, 8, 0.35);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Diagonal Shimmer Sheen on Hover */
+.btn-gold::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  transition: all 0.55s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #d97706 0%, var(--gold-primary) 50%, var(--gold-hover) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(194, 112, 8, 0.45);
+}
+
+.btn-gold:hover::after {
+  left: 125%;
+  opacity: 1;
+}
+
+.btn-gold:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 8px rgba(194, 112, 8, 0.3);
+}
+
+.btn-outline-gold {
+  padding: 11px 20px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-gold);
+  background: var(--gold-card-bg);
+  color: var(--text-gold);
   font-weight: 700;
   font-size: 0.86rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  user-select: none;
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
+.btn-outline-gold:hover {
+  background: var(--gold-primary);
+  border-color: var(--gold-hover);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(194, 112, 8, 0.3);
 }
 
-.btn-secondary {
-  padding: 10px 18px;
-  border-radius: 10px;
+.btn-outline-gold:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-ghost {
+  padding: 11px 20px;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-bg);
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.86rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+.btn-ghost:hover {
+  background: var(--bg-subbox);
+  color: var(--text-gold);
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(50, 38, 24, 0.08);
+}
+
+.btn-ghost:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-danger {
+  padding: 11px 22px;
+  border-radius: 12px;
+  border: 1px solid #ef4444;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.45);
+}
+
+.btn-danger:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Quick Counter / Tally Increment Buttons */
+.tally-btn {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tally-btn:hover {
+  background: var(--gold-card-bg);
+  border-color: var(--border-gold);
+  color: var(--text-gold);
+  transform: scale(1.05);
+}
+
+.tally-btn:active {
+  transform: scale(0.95);
+}
+
+/* Modals & Animations */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 22, 14, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  outline: none;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    transform: scale(0.94) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Banknote Card */
+.banknote-card {
+  border-radius: 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.banknote-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-gold);
 }
 
 /* Tables */
@@ -94,136 +323,103 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
 }
 
 .custom-table th {
-  padding: 12px 14px;
-  text-align: left;
-  font-size: 0.74rem;
-  font-weight: 700;
+  background: var(--bg-subbox);
+  color: var(--text-gold);
+  font-weight: 800;
   text-transform: uppercase;
+  font-size: 0.74rem;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border-color);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 14px 18px;
+  border-bottom: 2px solid var(--border-color);
+  text-align: left;
 }
 
 .custom-table td {
-  padding: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
   vertical-align: middle;
 }
 
 .custom-table tbody tr {
+  background: var(--card-bg);
   transition: background-color 0.15s ease;
 }
 
-.custom-table tbody tr:hover {
-  background-color: rgba(245, 158, 11, 0.03);
+.custom-table tbody tr:nth-child(even) {
+  background: var(--bg-subbox);
 }
 
-/* Payment Method Badges */
+.custom-table tbody tr:hover {
+  background: var(--card-hover-bg);
+}
+
 .method-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
 }
 
 .method-upi_qr {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.method-cash_box {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--blue-card-bg);
+  color: var(--blue);
+  border: 1px solid var(--blue-card-border);
 }
 
 .method-card {
-  background: rgba(139, 92, 246, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--purple-card-bg);
+  color: var(--purple);
+  border: 1px solid var(--purple-card-border);
 }
 
 .method-net_banking {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--gold-card-bg);
+  color: var(--gold-primary);
+  border: 1px solid var(--gold-card-border);
 }
 
-/* Modals */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  display: flex;
+.status-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 20px;
-  animation: fadeIn 0.18s ease-out;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
-.modal-content {
-  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.status-completed {
+  background: var(--emerald-card-bg);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-card-border);
 }
 
-.modal-close-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease;
-}
-
-.modal-close-btn:hover {
-  color: #fff;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-/* Print Styles for 80G Receipts */
+/* Print Panchanama Stylesheet */
 @media print {
   body {
-    background: #ffffff !important;
-    color: #000000 !important;
+    background: #fff !important;
+    color: #000 !important;
   }
-  .app-container, .sidebar, header, .no-print {
+  header, .no-print, button {
     display: none !important;
   }
-  .modal-overlay {
-    position: static !important;
-    background: transparent !important;
+  .page-wrapper {
     padding: 0 !important;
-  }
-  .modal-content.receipt-modal-box {
-    box-shadow: none !important;
-    border: none !important;
     max-width: 100% !important;
-    width: 100% !important;
   }
-  .printable-receipt {
-    padding: 0 !important;
+  .designer-card, .banknote-card {
+    border: 1px solid #333 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
   }
 }
