@@ -19,133 +19,16 @@ import {
   Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { api, fallbackData } from '../api/client';
+import { api } from '../api/client';
 import DonationReceiptModal from '../components/DonationReceiptModal';
 import { useNotification } from '../context/NotificationContext';
-
-const DEFAULT_ONLINE_DONATIONS = [
-  {
-    id: 101,
-    receipt_number: 'SDP-REC-20261020-0010',
-    transaction_id: 'UPI-TXN-9842109850',
-    donor_name: 'Srinivasan Iyer',
-    donor_phone: '+91 98401 22334',
-    donor_email: 'srini.iyer@example.com',
-    donor_pan: 'APPSI5566M',
-    amount: 15000,
-    payment_method: 'UPI_QR',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Temple Heritage & Sanctum Renovation',
-    created_at: '2026-10-20 15:15:50'
-  },
-  {
-    id: 102,
-    receipt_number: 'SDP-REC-20261020-0009',
-    transaction_id: 'UPI-TXN-9842109849',
-    donor_name: 'Rajesh K. Aggarwal',
-    donor_phone: '+91 98100 99887',
-    donor_email: 'rajesh.agg@example.com',
-    donor_pan: 'AKLPA8899Z',
-    amount: 2100,
-    payment_method: 'UPI_QR',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Daily Deepam & Temple Pooja Seva',
-    created_at: '2026-10-20 14:40:25'
-  },
-  {
-    id: 103,
-    receipt_number: 'SDP-REC-20261020-0007',
-    transaction_id: 'UPI-TXN-9842109847',
-    donor_name: 'Vijay & Meena Patel',
-    donor_phone: '+91 99201 44556',
-    donor_email: 'vpatel@example.com',
-    donor_pan: 'AHJPP6677T',
-    amount: 5000,
-    payment_method: 'UPI_QR',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Goshala - Sacred Cow Care & Fodder',
-    created_at: '2026-10-20 13:05:14'
-  },
-  {
-    id: 104,
-    receipt_number: 'SDP-REC-20261020-0006',
-    transaction_id: 'NET-TXN-9842109846',
-    donor_name: 'Dr. Sunita Deshmukh',
-    donor_phone: '+91 97654 32190',
-    donor_email: 'sunita.doc@example.com',
-    donor_pan: 'ABMPD1122K',
-    amount: 21000,
-    payment_method: 'NET_BANKING',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Vidyadhanam - Veda Patashala & Child Education',
-    created_at: '2026-10-20 12:20:30'
-  },
-  {
-    id: 105,
-    receipt_number: 'SDP-REC-20261020-0004',
-    transaction_id: 'UPI-TXN-9842109844',
-    donor_name: 'Amitabh Sengupta',
-    donor_phone: '+91 98112 34567',
-    donor_email: 'amitabh.sen@example.com',
-    donor_pan: 'CCDPS4455Q',
-    amount: 2500,
-    payment_method: 'UPI_QR',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Annadanam - Free Meals for Devotees',
-    created_at: '2026-10-20 11:12:00'
-  },
-  {
-    id: 106,
-    receipt_number: 'SDP-REC-20261020-0003',
-    transaction_id: 'CARD-TXN-9842109843',
-    donor_name: 'Kavitha Natarajan',
-    donor_phone: '+91 94451 88992',
-    donor_email: 'kavitha.n@example.com',
-    donor_pan: 'BNMPK9942R',
-    amount: 11000,
-    payment_method: 'CARD',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Goshala - Sacred Cow Care & Fodder',
-    created_at: '2026-10-20 10:30:45'
-  },
-  {
-    id: 107,
-    receipt_number: 'SDP-REC-20261020-0001',
-    transaction_id: 'UPI-TXN-9842109841',
-    donor_name: 'Rameshwar Sharma',
-    donor_phone: '+91 98234 56789',
-    donor_email: 'rameshwar.s@example.com',
-    donor_pan: 'AABCS1234F',
-    amount: 5100,
-    payment_method: 'UPI_QR',
-    payment_status: 'COMPLETED',
-    is_80g_claimed: 1,
-    cause_name: 'Annadanam - Free Meals for Devotees',
-    created_at: '2026-10-20 09:15:22'
-  }
-];
 
 export default function OnlinePaymentsPage() {
   const { notify } = useNotification();
 
-  const [donations, setDonations] = useState(() => {
-    try {
-      const saved = localStorage.getItem('sdp_online_donations');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn(e);
-    }
-    return DEFAULT_ONLINE_DONATIONS;
-  });
-
-  const [causes, setCauses] = useState(fallbackData.causes);
-  const [loading, setLoading] = useState(false);
+  const [donations, setDonations] = useState([]);
+  const [causes, setCauses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [methodFilter, setMethodFilter] = useState('ALL');
   const [causeFilter, setCauseFilter] = useState('ALL');
@@ -168,46 +51,40 @@ export default function OnlinePaymentsPage() {
     sankalp_text: ''
   });
 
-  // Fetch from backend
+  // Fetch from live database
   const fetchDonations = async () => {
     setLoading(true);
     try {
       const [donationsRes, causesRes] = await Promise.all([
         api.getDonations({ limit: 100 }),
-        api.getCauses ? api.getCauses() : Promise.resolve({ success: false })
+        api.getCauses()
       ]);
 
-      if (causesRes?.success && causesRes.causes) {
+      if (causesRes?.success && Array.isArray(causesRes.causes)) {
         setCauses(causesRes.causes);
       }
 
-      if (donationsRes?.success && donationsRes.donations) {
+      if (donationsRes?.success && Array.isArray(donationsRes.donations)) {
         // Filter only online payment methods
         const onlineOnly = donationsRes.donations.filter((d) => d.payment_method !== 'CASH_BOX');
-        if (onlineOnly.length > 0) {
-          setDonations(onlineOnly);
-          localStorage.setItem('sdp_online_donations', JSON.stringify(onlineOnly));
-        }
+        setDonations(onlineOnly);
+      } else {
+        setDonations([]);
       }
     } catch (err) {
-      console.warn('Using local online donations list');
+      console.error('Failed to retrieve online donations from database:', err);
+      setDonations([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Purge any stale dummy cache from previous versions
+    localStorage.removeItem('sdp_online_donations');
     fetchDonations();
   }, []);
 
-  // Save to localStorage whenever donations change
-  useEffect(() => {
-    try {
-      localStorage.setItem('sdp_online_donations', JSON.stringify(donations));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [donations]);
 
   // Aggregate Metrics
   const metrics = useMemo(() => {

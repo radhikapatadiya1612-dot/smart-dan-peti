@@ -1,5 +1,4 @@
 const { pool } = require('../config/db');
-const { mockCauses } = require('../config/mockData');
 
 async function getAllCauses(req, res) {
   try {
@@ -14,11 +13,8 @@ async function getAllCauses(req, res) {
 
     return res.json({ success: true, causes: rows });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      return res.json({ success: true, causes: mockCauses, isDemo: true });
-    }
     console.error('Error fetching causes:', error);
-    return res.status(500).json({ success: false, message: 'Failed to retrieve causes.' });
+    return res.status(500).json({ success: false, message: 'Failed to retrieve causes from database: ' + error.message });
   }
 }
 
@@ -60,12 +56,8 @@ async function getCauseById(req, res) {
       }
     });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      const found = mockCauses.find(c => String(c.id) === String(req.params.id)) || mockCauses[0];
-      return res.json({ success: true, cause: found, isDemo: true });
-    }
     console.error('Error fetching cause details:', error);
-    return res.status(500).json({ success: false, message: 'Failed to retrieve cause details.' });
+    return res.status(500).json({ success: false, message: 'Failed to retrieve cause details: ' + error.message });
   }
 }
 
@@ -96,11 +88,8 @@ async function createCause(req, res) {
       cause_id: result.insertId
     });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      return res.status(201).json({ success: true, message: 'Cause created (Demo mode).', cause_id: Date.now() });
-    }
     console.error('Error creating cause:', error);
-    return res.status(500).json({ success: false, message: 'Failed to create cause.' });
+    return res.status(500).json({ success: false, message: 'Failed to create cause: ' + error.message });
   }
 }
 
@@ -123,11 +112,8 @@ async function updateCause(req, res) {
 
     return res.json({ success: true, message: 'Cause updated successfully.' });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      return res.json({ success: true, message: 'Cause updated (Demo mode).' });
-    }
     console.error('Error updating cause:', error);
-    return res.status(500).json({ success: false, message: 'Failed to update cause.' });
+    return res.status(500).json({ success: false, message: 'Failed to update cause: ' + error.message });
   }
 }
 

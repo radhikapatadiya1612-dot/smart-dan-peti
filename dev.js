@@ -4,18 +4,31 @@ const readline = require('readline');
 const net = require('net');
 const fs = require('fs');
 
+const envPath = path.join(__dirname, 'backend', '.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+}
+
+const dbHost = process.env.DB_HOST || 'sql.freedb.tech';
+const dbPort = process.env.DB_PORT || '3306';
+const dbName = process.env.DB_NAME || 'freedb_T8zrBxcy';
+
 console.log('\x1b[33m====================================================\x1b[0m');
 console.log('\x1b[1m\x1b[36m  🚀 Starting Smart Dan Peti Full-Stack Development\x1b[0m');
 console.log('  • Backend API  : \x1b[32mhttp://localhost:5000\x1b[0m');
 console.log('  • Frontend App : \x1b[32mhttp://localhost:5174\x1b[0m');
-console.log('  • Database     : \x1b[32mMySQL (port 3306 / smart_dan_peti)\x1b[0m');
+console.log(`  • Database     : \x1b[32mMySQL (${dbHost}:${dbPort} / ${dbName})\x1b[0m`);
 console.log('\x1b[33m====================================================\x1b[0m\n');
 
 const isWin = process.platform === 'win32';
 const npmCmd = isWin ? 'npm.cmd' : 'npm';
 
-// Auto-check and start MySQL if using XAMPP
+// Auto-check and start MySQL if using local XAMPP
 function ensureMysql(callback) {
+  if (dbHost !== 'localhost' && dbHost !== '127.0.0.1') {
+    console.log(`\x1b[32m[Database] Configured for remote MySQL host: ${dbHost}:${dbPort}\x1b[0m`);
+    return callback();
+  }
   function checkPort(cb) {
     const socket = new net.Socket();
     socket.setTimeout(600);

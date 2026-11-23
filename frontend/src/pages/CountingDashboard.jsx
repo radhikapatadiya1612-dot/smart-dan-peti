@@ -23,36 +23,27 @@ import {
 import { api } from '../api/client';
 import { useNotification } from '../context/NotificationContext';
 
-// Master Currency & Coin denominations specification
+// Master Currency & Coin denominations specification (all zero counts baseline)
 const DEFAULT_DENOMINATIONS = [
   // Notes
-  { id: 'n500', name: '₹500 Note', value: 500, type: 'note', color: '#3b82f6', daily: 48, weekly: 336, monthly: 1440, yearly: 17280 },
-  { id: 'n200', name: '₹200 Note', value: 200, type: 'note', color: '#f59e0b', daily: 35, weekly: 245, monthly: 1050, yearly: 12600 },
-  { id: 'n100', name: '₹100 Note', value: 100, type: 'note', color: '#a855f7', daily: 82, weekly: 574, monthly: 2460, yearly: 29520 },
-  { id: 'n50',  name: '₹50 Note',  value: 50,  type: 'note', color: '#10b981', daily: 64, weekly: 448, monthly: 1920, yearly: 23040 },
-  { id: 'n20',  name: '₹20 Note',  value: 20,  type: 'note', color: '#ec4899', daily: 95, weekly: 665, monthly: 2850, yearly: 34200 },
-  { id: 'n10',  name: '₹10 Note',  value: 10,  type: 'note', color: '#06b6d4', daily: 140, weekly: 980, monthly: 4200, yearly: 50400 },
+  { id: 'n500', name: '₹500 Note', value: 500, type: 'note', color: '#3b82f6', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'n200', name: '₹200 Note', value: 200, type: 'note', color: '#f59e0b', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'n100', name: '₹100 Note', value: 100, type: 'note', color: '#a855f7', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'n50',  name: '₹50 Note',  value: 50,  type: 'note', color: '#10b981', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'n20',  name: '₹20 Note',  value: 20,  type: 'note', color: '#ec4899', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'n10',  name: '₹10 Note',  value: 10,  type: 'note', color: '#06b6d4', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
   // Coins
-  { id: 'c20',  name: '₹20 Coin',  value: 20,  type: 'coin', color: '#eab308', daily: 25, weekly: 175, monthly: 750, yearly: 9000 },
-  { id: 'c10',  name: '₹10 Coin',  value: 10,  type: 'coin', color: '#14b8a6', daily: 80, weekly: 560, monthly: 2400, yearly: 28800 },
-  { id: 'c5',   name: '₹5 Coin',   value: 5,   type: 'coin', color: '#38bdf8', daily: 210, weekly: 1470, monthly: 6300, yearly: 75600 },
-  { id: 'c2',   name: '₹2 Coin',   value: 2,   type: 'coin', color: '#94a3b8', daily: 280, weekly: 1960, monthly: 8400, yearly: 100800 },
-  { id: 'c1',   name: '₹1 Coin',   value: 1,   type: 'coin', color: '#cbd5e1', daily: 390, weekly: 2730, monthly: 11700, yearly: 140400 }
+  { id: 'c20',  name: '₹20 Coin',  value: 20,  type: 'coin', color: '#eab308', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'c10',  name: '₹10 Coin',  value: 10,  type: 'coin', color: '#14b8a6', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'c5',   name: '₹5 Coin',   value: 5,   type: 'coin', color: '#38bdf8', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'c2',   name: '₹2 Coin',   value: 2,   type: 'coin', color: '#94a3b8', daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+  { id: 'c1',   name: '₹1 Coin',   value: 1,   type: 'coin', color: '#cbd5e1', daily: 0, weekly: 0, monthly: 0, yearly: 0 }
 ];
 
 export default function CountingDashboard() {
   const { notify, confirmAction } = useNotification();
 
-  const [denominations, setDenominations] = useState(() => {
-    try {
-      const saved = localStorage.getItem('sdp_counting_data');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to load from storage:', e);
-    }
-    return DEFAULT_DENOMINATIONS;
-  });
-
+  const [denominations, setDenominations] = useState(DEFAULT_DENOMINATIONS);
   const [activePeriod, setActivePeriod] = useState('all'); // 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'note' | 'coin'
   const [showAddModal, setShowAddModal] = useState(false);
@@ -61,31 +52,42 @@ export default function CountingDashboard() {
   const [entryMode, setEntryMode] = useState('add'); // 'add' | 'set'
   const [isDbSynced, setIsDbSynced] = useState(false);
 
-  // Sync with MySQL Database on mount
+  // Sync strictly with MySQL Database on mount
   useEffect(() => {
+    // Clear any stale local dummy data from old versions
+    localStorage.removeItem('sdp_counting_data');
+
     async function fetchFromDb() {
       try {
         const res = await api.getCashDenominations();
         if (res?.success && Array.isArray(res.denominations) && res.denominations.length > 0) {
-          const merged = res.denominations.map((d) => {
-            const def = DEFAULT_DENOMINATIONS.find((x) => x.id === d.id) || {};
-            return { ...def, ...d };
+          const merged = DEFAULT_DENOMINATIONS.map((def) => {
+            const fromDb = res.denominations.find((x) => x.id === def.id);
+            if (fromDb) {
+              return {
+                ...def,
+                daily: Number(fromDb.daily) || 0,
+                weekly: Number(fromDb.weekly) || 0,
+                monthly: Number(fromDb.monthly) || 0,
+                yearly: Number(fromDb.yearly) || 0
+              };
+            }
+            return def;
           });
           setDenominations(merged);
-          localStorage.setItem('sdp_counting_data', JSON.stringify(merged));
           setIsDbSynced(true);
         }
       } catch (err) {
-        console.warn('MySQL not reachable, using offline cached data.');
+        console.error('Error fetching cash denominations from database:', err);
       }
     }
     fetchFromDb();
   }, []);
 
-  // Save changes to localStorage & MySQL backend
+  // Save changes to MySQL backend
   useEffect(() => {
+    if (!isDbSynced) return;
     try {
-      localStorage.setItem('sdp_counting_data', JSON.stringify(denominations));
       api.updateCashDenominations(denominations)
         .then(() => setIsDbSynced(true))
         .catch(() => setIsDbSynced(false));
@@ -215,11 +217,11 @@ export default function CountingDashboard() {
       iconType: 'reset',
       onConfirm: async () => {
         setDenominations(DEFAULT_DENOMINATIONS);
-        localStorage.setItem('sdp_counting_data', JSON.stringify(DEFAULT_DENOMINATIONS));
+        localStorage.removeItem('sdp_counting_data');
         try {
-          await api.saveDenominations(DEFAULT_DENOMINATIONS);
+          await api.updateCashDenominations(DEFAULT_DENOMINATIONS);
         } catch (e) {
-          console.warn('Backend sync on reset:', e);
+          console.error('Backend sync on reset:', e);
         }
         notify.success(
           'All physical cash and coin counts have been restored to default temple seed figures.',

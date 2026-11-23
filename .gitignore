@@ -1,5 +1,9 @@
 node_modules/
+backend/node_modules/
+frontend/node_modules/
 .env
+backend/.env
+frontend/.env
 .env.local
 *.log
 dist/
@@ -7,4 +11,5 @@ dist-ssr/
 .vscode/
 .idea/
 .DS_Store
+
 

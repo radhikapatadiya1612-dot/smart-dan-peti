@@ -4,8 +4,8 @@
 -- Compatible with MySQL 8.0+ / MariaDB 10.4+
 -- =======================================================
 
-CREATE DATABASE IF NOT EXISTS `smart_dan_peti` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `smart_dan_peti`;
+-- CREATE DATABASE IF NOT EXISTS `smart_dan_peti` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE `smart_dan_peti`;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `system_alerts`;
@@ -284,3 +284,31 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `user_name`, `action`, `entity_type`,
 INSERT INTO `app_settings` (`id`, `trust_name`, `tax_80g_number`, `upi_vpa`, `weight_threshold_kg`, `fill_alert_pct`, `demo_mode_enabled`, `auto_approve_threshold`, `currency_symbol`) VALUES
 (1, 'Sri Maha Mandir Trust', 'AAATS1234F/80G/2022-23', 'smartdanpeti@upi', 20.00, 85, 1, 0.98, '₹')
 ON DUPLICATE KEY UPDATE `trust_name`=VALUES(`trust_name`);
+
+-- 12. Cash Denominations (Physical Counting Room Records)
+CREATE TABLE IF NOT EXISTS `cash_denominations` (
+  `id` VARCHAR(10) PRIMARY KEY,
+  `name` VARCHAR(50) NOT NULL,
+  `value` INT NOT NULL,
+  `type` ENUM('note', 'coin') NOT NULL,
+  `color` VARCHAR(20) NOT NULL,
+  `daily` INT NOT NULL DEFAULT 0,
+  `weekly` INT NOT NULL DEFAULT 0,
+  `monthly` INT NOT NULL DEFAULT 0,
+  `yearly` INT NOT NULL DEFAULT 0,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `cash_denominations` (`id`, `name`, `value`, `type`, `color`, `daily`, `weekly`, `monthly`, `yearly`) VALUES
+('n500', '₹500 Note', 500, 'note', '#3b82f6', 7, 7, 7, 7),
+('n200', '₹200 Note', 200, 'note', '#f59e0b', 0, 0, 0, 0),
+('n100', '₹100 Note', 100, 'note', '#a855f7', 0, 0, 0, 0),
+('n50',  '₹50 Note',  50,  'note', '#10b981', 0, 0, 0, 0),
+('n20',  '₹20 Note',  20,  'note', '#ec4899', 0, 0, 0, 0),
+('n10',  '₹10 Note',  10,  'note', '#06b6d4', 0, 0, 0, 0),
+('c20',  '₹20 Coin',  20,  'coin', '#eab308', 0, 0, 0, 0),
+('c10',  '₹10 Coin',  10,  'coin', '#14b8a6', 0, 0, 0, 0),
+('c5',   '₹5 Coin',   5,   'coin', '#38bdf8', 0, 0, 0, 0),
+('c2',   '₹2 Coin',   2,   'coin', '#94a3b8', 0, 0, 0, 0),
+('c1',   '₹1 Coin',   1,   'coin', '#cbd5e1', 0, 0, 0, 0)
+ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `value`=VALUES(`value`);

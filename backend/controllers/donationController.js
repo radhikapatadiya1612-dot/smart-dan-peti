@@ -1,6 +1,5 @@
 const QRCode = require('qrcode');
 const { pool } = require('../config/db');
-const { mockDonations } = require('../config/mockData');
 
 // Helper to generate formatted receipt numbers
 function generateReceiptNumber() {
@@ -48,56 +47,67 @@ async function createDonation(req, res) {
     const safeDonorName = is_anonymous ? 'Anonymous Devotee' : (donor_name?.trim() || 'Generous Devotee');
     const is80G = Boolean(is_80g_claimed && donor_pan);
 
-    // Try obtaining MySQL connection
-    try {
-      connection = await pool.getConnection();
-      await connection.beginTransaction();
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-      // Verify cause exists
-      const [causeRows] = await connection.query('SELECT * FROM causes WHERE id = ? AND is_active = 1', [cause_id || 1]);
-      const cause = causeRows[0] || { id: 1, name: 'General Temple Fund', code: 'GENERAL' };
+    // Verify cause exists in database
+    const [causeRows] = await connection.query('SELECT * FROM causes WHERE id = ? AND is_active = 1', [cause_id || 1]);
+    const cause = causeRows[0] || { id: 1, name: 'General Temple Fund', code: 'GENERAL' };
 
-      // Insert donation record
-      const [donationResult] = await connection.query(
-        `INSERT INTO donations (
-          receipt_number, transaction_id, box_id, cause_id, donor_name,
-          donor_phone, donor_email, donor_pan, donor_address, amount,
-          payment_method, payment_status, is_80g_claimed, sankalp_text,
-          devotee_gotra, devotee_nakshatra, is_anonymous
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COMPLETED', ?, ?, ?, ?, ?)`,
-        [
-          receiptNumber,
-          transactionId,
-          box_id || null,
-          cause.id,
-          safeDonorName,
-          is_anonymous ? null : (donor_phone || null),
-          is_anonymous ? null : (donor_email || null),
-          is80G ? donor_pan.toUpperCase() : null,
-          is_anonymous ? null : (donor_address || null),
-          donationAmount,
-          method,
-          is80G ? 1 : 0,
-          sankalp_text || null,
-          devotee_gotra || null,
-          devotee_nakshatra || null,
-          is_anonymous ? 1 : 0
-        ]
-      );
+    // Insert donation record directly into database
+    const [donationResult] = await connection.query(
+      `INSERT INTO donations (
+        receipt_number, transaction_id, box_id, cause_id, donor_name,
+        donor_phone, donor_email, donor_pan, donor_address, amount,
+        payment_method, payment_status, is_80g_claimed, sankalp_text,
+        devotee_gotra, devotee_nakshatra, is_anonymous
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COMPLETED', ?, ?, ?, ?, ?)`,
+      [
+        receiptNumber,
+        transactionId,
+        box_id || null,
+        cause.id,
+        safeDonorName,
+        is_anonymous ? null : (donor_phone || null),
+        is_anonymous ? null : (donor_email || null),
+        is80G ? donor_pan.toUpperCase() : null,
+        is_anonymous ? null : (donor_address || null),
+        donationAmount,
+        method,
+        is80G ? 1 : 0,
+        sankalp_text || null,
+        devotee_gotra || null,
+        devotee_nakshatra || null,
+        is_anonymous ? 1 : 0
+      ]
+    );
 
-      const donationId = donationResult.insertId;
+    const donationId = donationResult.insertId;
 
-      // Update cause collected amount
+    // Update cause collected amount
+    await connection.query(
+      'UPDATE causes SET collected_amount = collected_amount + ? WHERE id = ?',
+      [donationAmount, cause.id]
+    );
+
+    // If box_id provided and payment is cash, update smart_box cash amount
+    if (box_id && method === 'CASH_BOX') {
       await connection.query(
-        'UPDATE causes SET collected_amount = collected_amount + ? WHERE id = ?',
-        [donationAmount, cause.id]
+        'UPDATE smart_boxes SET current_cash_amount = current_cash_amount + ? WHERE id = ?',
+        [donationAmount, box_id]
       );
-
-      await connection.commit();
-    } catch (dbErr) {
-      if (connection) await connection.rollback().catch(() => {});
-      // If DB error, proceed in simulation mode
     }
+
+    // If sankalp_text provided, insert into sankalps table
+    if (sankalp_text) {
+      await connection.query(
+        `INSERT INTO sankalps (donation_id, devotee_name, gotra, nakshatra, prayer_intent, status)
+         VALUES (?, ?, ?, ?, ?, 'RECEIVED')`,
+        [donationId, safeDonorName, devotee_gotra || null, devotee_nakshatra || null, sankalp_text]
+      );
+    }
+
+    await connection.commit();
 
     // Generate UPI payload and QR code data URL
     const upiVpa = process.env.UPI_VPA || 'smartdanpeti@upi';
@@ -115,14 +125,14 @@ async function createDonation(req, res) {
 
     return res.status(201).json({
       success: true,
-      message: 'Donation processed successfully!',
+      message: 'Donation recorded and committed to database successfully!',
       donation: {
-        id: Date.now(),
+        id: donationId,
         receipt_number: receiptNumber,
         transaction_id: transactionId,
         amount: donationAmount,
-        cause_id: cause_id || 1,
-        cause_name: req.body.cause_name || 'Annadanam - Free Meals for Devotees',
+        cause_id: cause.id,
+        cause_name: cause.name,
         donor_name: safeDonorName,
         donor_phone: is_anonymous ? null : (donor_phone || null),
         donor_email: is_anonymous ? null : (donor_email || null),
@@ -137,8 +147,9 @@ async function createDonation(req, res) {
       }
     });
   } catch (error) {
+    if (connection) await connection.rollback().catch(() => {});
     console.error('Error creating donation:', error);
-    return res.status(500).json({ success: false, message: 'Failed to process donation. Please try again.' });
+    return res.status(500).json({ success: false, message: 'Database error creating donation: ' + error.message });
   } finally {
     if (connection) connection.release();
   }
@@ -147,7 +158,7 @@ async function createDonation(req, res) {
 async function getAllDonations(req, res) {
   try {
     const page = parseInt(req.query.page || '1', 10);
-    const limit = parseInt(req.query.limit || '20', 10);
+    const limit = parseInt(req.query.limit || '100', 10);
     const offset = (page - 1) * limit;
     const causeId = req.query.cause_id;
     const method = req.query.payment_method;
@@ -156,11 +167,11 @@ async function getAllDonations(req, res) {
     let whereClauses = ['1=1'];
     let params = [];
 
-    if (causeId) {
+    if (causeId && causeId !== 'ALL') {
       whereClauses.push('d.cause_id = ?');
       params.push(causeId);
     }
-    if (method) {
+    if (method && method !== 'ALL') {
       whereClauses.push('d.payment_method = ?');
       params.push(method);
     }
@@ -199,21 +210,8 @@ async function getAllDonations(req, res) {
       }
     });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      return res.json({
-        success: true,
-        donations: mockDonations,
-        pagination: {
-          page: 1,
-          limit: 20,
-          total: mockDonations.length,
-          totalPages: 1
-        },
-        isDemo: true
-      });
-    }
     console.error('Error fetching donations:', error);
-    return res.status(500).json({ success: false, message: 'Failed to retrieve donations.' });
+    return res.status(500).json({ success: false, message: 'Failed to retrieve donations from database: ' + error.message });
   }
 }
 
@@ -232,11 +230,8 @@ async function getRecentTicker(req, res) {
 
     return res.json({ success: true, ticker: rows });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      return res.json({ success: true, ticker: mockDonations.slice(0, 5), isDemo: true });
-    }
     console.error('Error fetching ticker:', error);
-    return res.status(500).json({ success: false, message: 'Failed to retrieve donation ticker.' });
+    return res.status(500).json({ success: false, message: 'Failed to retrieve donation ticker: ' + error.message });
   }
 }
 
@@ -260,7 +255,7 @@ async function getReceipt(req, res) {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'No donation receipt found matching the query.' });
+      return res.status(404).json({ success: false, message: 'No donation receipt found matching the query in database.' });
     }
 
     const receipt = rows[0];
@@ -288,12 +283,8 @@ async function getReceipt(req, res) {
       allReceipts: rows
     });
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
-      const found = mockDonations.find(d => d.receipt_number === req.params.query || d.transaction_id === req.params.query) || mockDonations[0];
-      return res.json({ success: true, receipt: found, allReceipts: [found], isDemo: true });
-    }
     console.error('Error looking up receipt:', error);
-    return res.status(500).json({ success: false, message: 'Error looking up receipt.' });
+    return res.status(500).json({ success: false, message: 'Error looking up receipt: ' + error.message });
   }
 }
 
@@ -323,7 +314,7 @@ async function generatePaymentQr(req, res) {
     });
   } catch (error) {
     console.error('Error generating payment QR:', error);
-    return res.status(500).json({ success: false, message: 'Failed to generate QR code.' });
+    return res.status(500).json({ success: false, message: 'Failed to generate QR code: ' + error.message });
   }
 }
 
@@ -332,7 +323,8 @@ async function getCashDenominations(req, res) {
     const [rows] = await pool.query('SELECT * FROM cash_denominations ORDER BY type DESC, value DESC');
     return res.json({ success: true, denominations: rows });
   } catch (error) {
-    return res.json({ success: false, message: error.message });
+    console.error('Error querying cash_denominations:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 }
 
@@ -342,16 +334,35 @@ async function updateCashDenominations(req, res) {
     if (Array.isArray(denominations)) {
       for (const item of denominations) {
         await pool.query(
-          `UPDATE cash_denominations 
-           SET daily = ?, weekly = ?, monthly = ?, yearly = ? 
-           WHERE id = ?`,
-          [item.daily, item.weekly, item.monthly, item.yearly, item.id]
+          `INSERT INTO cash_denominations (id, name, value, type, color, daily, weekly, monthly, yearly)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE 
+             name = VALUES(name),
+             value = VALUES(value),
+             type = VALUES(type),
+             color = VALUES(color),
+             daily = VALUES(daily),
+             weekly = VALUES(weekly),
+             monthly = VALUES(monthly),
+             yearly = VALUES(yearly)`,
+          [
+            item.id,
+            item.name,
+            item.value,
+            item.type,
+            item.color || '#3b82f6',
+            item.daily || 0,
+            item.weekly || 0,
+            item.monthly || 0,
+            item.yearly || 0
+          ]
         );
       }
     }
     const [rows] = await pool.query('SELECT * FROM cash_denominations ORDER BY type DESC, value DESC');
     return res.json({ success: true, denominations: rows });
   } catch (error) {
+    console.error('Error updating cash_denominations:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 }

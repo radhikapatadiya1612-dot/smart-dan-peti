@@ -3,15 +3,6 @@ import { api, setAuthToken, getAuthToken } from '../api/client';
 
 const AuthContext = createContext();
 
-const DEMO_ADMIN = {
-  id: 1,
-  name: 'Srikanth Ramanathan',
-  email: 'admin@smartdanpeti.org',
-  role: 'ADMIN',
-  phone: '+91 98765 43210',
-  pan_number: 'ABCDE1234F'
-};
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('sdp_user');
@@ -25,7 +16,7 @@ export function AuthProvider({ children }) {
         return null;
       }
     }
-    return DEMO_ADMIN;
+    return null;
   });
 
   const [token, setToken] = useState(() => getAuthToken());
@@ -39,6 +30,21 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
+  // Verify token on mount with live backend
+  useEffect(() => {
+    if (token && !user) {
+      api.getProfile()
+        .then((res) => {
+          if (res?.success && res.user) {
+            setUser(res.user);
+          } else {
+            logout();
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const login = async (email, password) => {
     setLoading(true);
     try {
@@ -49,21 +55,9 @@ export function AuthProvider({ children }) {
         setAuthToken(res.token);
         return { success: true };
       }
-      // Demo fallback
-      if (email.toLowerCase() === DEMO_ADMIN.email.toLowerCase() && (password === 'admin123' || password === 'admin@123')) {
-        setUser(DEMO_ADMIN);
-        const mockToken = 'mock_jwt_token_admin';
-        setToken(mockToken);
-        setAuthToken(mockToken);
-        return { success: true };
-      }
       return { success: false, message: res.error || res.message || 'Invalid administrator email or password.' };
     } catch (err) {
-      if (email.toLowerCase() === DEMO_ADMIN.email.toLowerCase() && (password === 'admin123' || password === 'admin@123')) {
-        setUser(DEMO_ADMIN);
-        return { success: true };
-      }
-      return { success: false, message: 'Server connection error during admin sign in.' };
+      return { success: false, message: 'Server connection error during admin sign in: ' + err.message };
     } finally {
       setLoading(false);
     }
@@ -79,23 +73,7 @@ export function AuthProvider({ children }) {
         setAuthToken(res.token);
         return { success: true };
       }
-      // Offline fallback
-      if (adminData.name && adminData.email) {
-        const fallbackAdmin = {
-          id: Date.now(),
-          name: adminData.name,
-          email: adminData.email,
-          role: 'ADMIN',
-          phone: adminData.phone || '+91 98765 00000',
-          pan_number: adminData.pan_number || 'TRADM9999Z'
-        };
-        setUser(fallbackAdmin);
-        const mockToken = 'mock_jwt_token_admin_new';
-        setToken(mockToken);
-        setAuthToken(mockToken);
-        return { success: true };
-      }
-      return { success: false, message: res.error || res.message || 'Failed to create admin account.' };
+      return { success: false, message: res.error || res.message || 'Failed to create admin account in database.' };
     } catch (err) {
       return { success: false, message: err.message || 'Error creating administrator account.' };
     } finally {
@@ -103,11 +81,9 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const quickDemoLogin = () => {
-    setUser(DEMO_ADMIN);
-    const mockToken = 'mock_jwt_token_admin';
-    setToken(mockToken);
-    setAuthToken(mockToken);
+  // Quick sign-in using actual seeded administrator credentials in MySQL
+  const quickDemoLogin = async () => {
+    return await login('admin@smartdanpeti.org', 'admin123');
   };
 
   const logout = () => {
@@ -115,6 +91,7 @@ export function AuthProvider({ children }) {
     setToken('');
     setAuthToken('');
     localStorage.removeItem('sdp_user');
+    localStorage.removeItem('sdp_token');
   };
 
   return (
@@ -127,7 +104,7 @@ export function AuthProvider({ children }) {
         registerAdmin,
         quickDemoLogin,
         logout,
-        demoAdmin: DEMO_ADMIN
+        demoAdmin: { email: 'admin@smartdanpeti.org', password: 'admin123' }
       }}
     >
       {children}
@@ -136,5 +113,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
